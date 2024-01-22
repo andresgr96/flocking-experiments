@@ -4,7 +4,8 @@ Personal repo to get experience using the Violet simulator and play around with 
 ## Installation of Simulator
 
 ```sh
-git clone install -U violet-simulator
+pip install -U violet-simulator
+git clone https://github.com/m-rots/violet.git
 ```
 
 ## Clone this Repository
@@ -16,5 +17,5 @@ cd flocking_experiments
 ```
 
 ## Running flocking example
-Open your favorite python editor and run simple_flocking.py
+Open your favorite Python editor and run simple_flocking.py
 
