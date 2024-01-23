@@ -11,25 +11,24 @@ import pygame as pg
 from pygame.gfxdraw import hline, vline
 from pygame.math import Vector2
 
+
 class SourceSim(Simulation):
 
     """
         This class inherits from Simulation, but has the extra parameter to have an image as custom background.
 
-        Eventually itll build a coordinate system from the image array values to use as environment.
+        Eventually it'll build a coordinate system from the image array values to use as environment.
     """
     _background: pg.surface.Surface
     _clock: pg.time.Clock
     _screen: pg.surface.Surface
 
-    def __init__(self, image_path, config: Optional[Config] = None):
+    def __init__(self, image, config: Optional[Config] = None):
         super().__init__(config)
 
         pg.display.init()
         pg.display.set_caption("Violet")
 
-        # image_path = 'C:/Users/andre/Desktop/violet/vi/light_source.jpg'
-        image = cv2.imread(image_path)
         image_rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
         img_width, img_height, _ = image_rgb.shape
 
