@@ -17,5 +17,7 @@ cd flocking_experiments
 ```
 
 ## Running flocking example
-Open your favorite Python editor and run simple_flocking.py
+1. Go to vi/simulation.py and change line 433 with:  
+2. self._background.fill((255, 255, 255))  
+3. Open your favorite Python editor and run simple_flocking.py
 
