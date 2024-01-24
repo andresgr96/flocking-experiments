@@ -8,6 +8,6 @@ image = cv2.imread(image_path)
 # Run the sim
 simulation = (
     SourceSim(image)
-    .batch_spawn_agents(100, SourceAgent, images=["images/drone2.png"])
+    .batch_spawn_agents(50, SourceAgent, images=["images/drone2.png"])
     .run()
 )
