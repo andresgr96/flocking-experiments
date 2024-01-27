@@ -21,3 +21,9 @@ cd flocking_experiments
 2. self._background.fill((255, 255, 255))  
 3. Open your favorite Python editor and run simple_flocking.py
 
+## Running source localization
+1. Simply run source_loc.py.
+2. If you want to run it from terminal, you might need to change the paths in:
+   3. source_lock.py lines 5 and 11
+   4. agent_flock.py line 62
+
