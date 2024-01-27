@@ -9,7 +9,7 @@ from pygame.math import Vector2
 
 # Inherit from Storms agent class
 class FlockingAgent(Agent):
-    def __init__(self, simulation, images, radius=5, speed=2, alignment_factor=0,  # Might try the matrix config trick
+    def __init__(self, simulation, images, radius=5, speed=1, alignment_factor=0,  # Might try the matrix config trick
                  cohesion_factor=1.2, separation_factor=0.8, separation_radius=20):
         super().__init__(images, simulation)
         self.radius = radius
@@ -57,7 +57,7 @@ class FlockingAgent(Agent):
 
 
 class SourceAgent(FlockingAgent):
-    def __init__(self, simulation, images, radius=5, speed=5, alignment_factor=1.0,
+    def __init__(self, simulation, images, radius=5, speed=2, alignment_factor=1.0,
                  cohesion_factor=1.2, separation_factor=0.8, separation_radius=20,
                  image_path="images/light_source.jpg", epsilon=0.1):
         super().__init__(simulation, images, radius, speed, alignment_factor,
@@ -93,8 +93,6 @@ class SourceAgent(FlockingAgent):
                 self.move += final_dir
         else:
             self.move += Vector2(random.randint(-1, 1), random.randint(-1, 1))
-            # if self.gradient[pos_x][pos_y] <= 500:
-            #     self.move += Vector2(random.randint(-1, 1), random.randint(-1, 1))
 
         nearby_agents = list(self.in_proximity_accuracy())
 
