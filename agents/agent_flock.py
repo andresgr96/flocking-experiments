@@ -73,7 +73,7 @@ class SourceAgent(FlockingAgent):
         self.move = Vector2(0, 0)
         at_source = False
 
-        # First version will just round the pos and won't probably be able to move diagonally properly
+        # First version will just round the position
         pos_x, pos_y = self.pos
         pos_x, pos_y = round(pos_x), round(pos_y)
         source_direction = self.sense_highest(pos_x, pos_y, 20)
