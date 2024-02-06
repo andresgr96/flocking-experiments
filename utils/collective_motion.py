@@ -9,12 +9,12 @@ ALIGN_WEIGHT: float = 2.0
 AVOID_WEIGHT: float = 1.0
 
 # Strength coefficients
-e: float = 12.0
-k_rep: float = 2.0
+E: float = 12.0
+K_REP: float = 2.0
 
 # Perception Ranges
-Dp: float = 2.0
-Dr: float = 0.5
+DP: float = 2.0
+DR: float = 0.5
 
 # Desired distance variables
 DESIRED_DIST_COEFF: float = 2.0
@@ -29,8 +29,8 @@ def compute_target_velocities(focal_drone: Agent, linear_velocity: Vector2, angu
     """
     focal_pos = focal_drone.pos
 
-    target_vel = Vector2(1, 1)
-    target_ang_vel = 5.0
+    target_vel = Vector2(1, 0)
+    target_ang_vel = 1.0
 
     return target_vel, target_ang_vel
 
@@ -66,7 +66,7 @@ def single_proximal_vector_magnitude(dist: float) -> float:
 
     """
 
-    return -e*((2*(DESIRED_DIST_COEFF**4/dist**5)) - (DESIRED_DIST_COEFF**2/dist**3))
+    return -E * ((2 * (DESIRED_DIST_COEFF**4/dist**5)) - (DESIRED_DIST_COEFF**2/dist**3))
 
 
 def single_proximal_vector_angle(focal_agent: Agent, neighbor_agent: Agent) -> float:

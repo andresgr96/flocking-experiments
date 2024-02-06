@@ -41,19 +41,19 @@ class FlockingAgent(Agent):
             center_of_mass /= len(nearby_agents)
 
             # Alignment
-            self.move += average_velocity * self.alignment_factor
+            self.linear_velocity += average_velocity * self.alignment_factor
 
             # Cohesion
             direction_to_center = center_of_mass - self.pos
             scaled_direction = direction_to_center.normalize() * self.cohesion_factor
-            self.move += scaled_direction
+            self.linear_velocity += scaled_direction
 
             # Separation
-            self.move -= separation_vector * self.separation_factor
+            self.linear_velocity -= separation_vector * self.separation_factor
 
             # Clamp speed and update position
-            self.move.scale_to_length(self.speed)
-            self.pos += self.move
+            self.linear_velocity.scale_to_length(self.speed)
+            self.pos += self.linear_velocity
 
 
 class SourceAgent(FlockingAgent):
@@ -70,7 +70,7 @@ class SourceAgent(FlockingAgent):
 
     def update(self):
         # Reset move to not accumulate velocity
-        self.move = Vector2(0, 0)
+        self.linear_velocity = Vector2(0, 0)
         at_source = False
 
         # First version will just round the position
@@ -85,14 +85,14 @@ class SourceAgent(FlockingAgent):
         # Move towards light and handle tradeoff
         if source_direction.length() > 0:
             if explore:
-                self.move += Vector2(random.randint(-1, 1), random.randint(-1, 1))
+                self.linear_velocity += Vector2(random.randint(-1, 1), random.randint(-1, 1))
             else:
                 x_dir = self.speed if source_direction[0] > pos_x else -self.speed if source_direction[0] < pos_x else 0
                 y_dir = self.speed if source_direction[1] > pos_y else -self.speed if source_direction[1] < pos_y else 0
                 final_dir = Vector2(x_dir, y_dir)
-                self.move += final_dir
+                self.linear_velocity += final_dir
         else:
-            self.move += Vector2(random.randint(-1, 1), random.randint(-1, 1))
+            self.linear_velocity += Vector2(random.randint(-1, 1), random.randint(-1, 1))
 
         nearby_agents = list(self.in_proximity_accuracy())
 
@@ -115,19 +115,19 @@ class SourceAgent(FlockingAgent):
             center_of_mass /= len(nearby_agents)
 
             # Alignment
-            self.move += average_velocity * self.alignment_factor
+            self.linear_velocity += average_velocity * self.alignment_factor
 
             # Cohesion
             direction_to_center = center_of_mass - self.pos
             scaled_direction = direction_to_center.normalize() * self.cohesion_factor
-            self.move += scaled_direction
+            self.linear_velocity += scaled_direction
 
             # Separation
-            self.move -= separation_vector * self.separation_factor
+            self.linear_velocity -= separation_vector * self.separation_factor
 
             # Clamp speed and update position
-            self.move.scale_to_length(self.speed)
-            self.pos += self.move
+            self.linear_velocity.scale_to_length(self.speed)
+            self.pos += self.linear_velocity
 
     def sense_highest(self, drone_x, drone_y, sensor_range) -> Vector2:
 

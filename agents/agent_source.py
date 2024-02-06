@@ -25,7 +25,7 @@ class SourceAgent(FlockingAgent):
         # super().update()
 
         # Then move towards light
-        self.move = Vector2(0, 0)
+        self.linear_velocity = Vector2(0, 0)
 
         # First version will just round the pos and wont probably be able to move diagonally properly
         pos_x, pos_y = self.pos
@@ -39,14 +39,14 @@ class SourceAgent(FlockingAgent):
         # Exploit
         if source_direction.length() > 0:
             if explore:
-                self.move += Vector2(random.randint(-1, 1), random.randint(-1, 1))
+                self.linear_velocity += Vector2(random.randint(-1, 1), random.randint(-1, 1))
             else:
                 x_dir = self.speed if source_direction[0] > pos_x else -self.speed if source_direction[0] < pos_x else 0
                 y_dir = self.speed if source_direction[1] > pos_y else -self.speed if source_direction[1] < pos_y else 0
                 final_dir = Vector2(x_dir, y_dir)
-                self.move += final_dir
+                self.linear_velocity += final_dir
         else:
-            self.move = Vector2(0, 0)
+            self.linear_velocity = Vector2(0, 0)
 
     def sense_highest(self, drone_x, drone_y, sensor_range) -> Vector2:
 

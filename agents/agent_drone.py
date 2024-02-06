@@ -7,8 +7,8 @@ from utils.collective_motion import compute_target_velocities
 
 
 class DroneAgent(Agent):
-    def __init__(self, simulation, images, linear_velocity=Vector2(1, 1), angular_velocity=0.0,
-                 target_linear_velocity=Vector2(0, 0), target_angular_velocity=0.0, heading=None):
+    def __init__(self, simulation, images, linear_velocity=Vector2(1, 0), angular_velocity=0.0,
+                 target_linear_velocity=Vector2(0, 0), target_angular_velocity=0.0, heading=0.0):
         super().__init__(images, simulation)
 
         # Add parameters specific to drone movement
@@ -31,6 +31,7 @@ class DroneAgent(Agent):
         # Rotate heading based on angular velocity
         self.heading += self.angular_velocity
 
-        # Move in the direction of heading with linear velocity
-        self.move = self.linear_velocity.rotate(self.heading)
+        # Move in the direction of heading with at linear velocity
+        self.linear_velocity = self.linear_velocity.rotate(self.heading)
+        print(self.linear_velocity)
 
