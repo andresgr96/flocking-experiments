@@ -2,6 +2,7 @@ import pygame as pg
 import random
 from pygame.math import Vector2
 from vi import ProximityIter, Agent
+# from agents.agent_drone import DroneAgent
 
 # Final Virtual force coefficients
 PROX_WEIGHT: float = 1.0
@@ -30,7 +31,7 @@ def compute_target_velocities(focal_drone: Agent, linear_velocity: Vector2, angu
     focal_pos = focal_drone.pos
 
     target_vel = Vector2(1, 0)
-    target_ang_vel = 1.0
+    target_ang_vel = 30.0
 
     return target_vel, target_ang_vel
 
@@ -72,6 +73,7 @@ def single_proximal_vector_magnitude(dist: float) -> float:
 def single_proximal_vector_angle(focal_agent: Agent, neighbor_agent: Agent) -> float:
     """
     Calculates the angle from one agent position to its neighbor.
+
     Might be that pygame uses the global reference frame, checking needed!!
 
     """
@@ -81,8 +83,36 @@ def single_proximal_vector_angle(focal_agent: Agent, neighbor_agent: Agent) -> f
 # -------------------------------- Alignment Control Section --------------------------------
 
 
-def alignment_control_force() -> Vector2:
-    pass
+def alignment_control_force(focal_agent: Agent) -> Vector2:
+
+    # Get headings
+    focal_heading = Vector2(1, 0).rotate(focal_agent.heading)
+    neighbors_heading = sum_neighbor_headings(focal_agent)
+
+    # Calculate total heading and divide by its length to get the final alignment control vector
+    total_heading = focal_heading + neighbors_heading
+    alignment_vector = total_heading / (total_heading.length())
+
+    return alignment_vector
+
+
+def sum_neighbor_headings(focal_agent: Agent) -> Vector2:
+    """
+    Calculates the sum of the focal agents neighbor headings.
+
+    We assume that Pygame's world reference works as global reference, checking needed!!
+
+    """
+    total_heading = Vector2(0, 0)
+
+    for neighbor, _ in focal_agent.in_proximity_accuracy():
+
+        neighbor_vector_heading = Vector2(1, 0).rotate(neighbor.heading)
+        total_heading += neighbor_vector_heading
+
+        total_heading += neighbor_vector_heading
+
+    return total_heading
 
 
 # -------------------------------- Boundary Avoidance Section --------------------------------

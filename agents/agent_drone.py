@@ -21,7 +21,7 @@ class DroneAgent(Agent):
     def update(self):
 
         # Example of using self.linear_velocity, self.angular_velocity, and self.heading for moving
-        # print(collective_motion.proximal_vector_magnitude(self))
+        # print(collective_motion.proximal_control_force(self))
 
         # Compute target velocities
         target_vel, self.angular_velocity = \
@@ -29,9 +29,10 @@ class DroneAgent(Agent):
 
         self.linear_velocity = target_vel
         # Rotate heading based on angular velocity
-        self.heading += self.angular_velocity
+        self.heading = self.angular_velocity
+        print(collective_motion.alignment_control_force(self))
 
         # Move in the direction of heading with at linear velocity
         self.linear_velocity = self.linear_velocity.rotate(self.heading)
-        print(self.linear_velocity)
+        # print(self.linear_velocity)
 
