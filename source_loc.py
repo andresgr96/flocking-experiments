@@ -11,6 +11,6 @@ image = cv2.imread(image_path)
 if __name__ == "__main__":
     simulation = (
         SourceSim(image, Config(image_rotation=True))
-        .batch_spawn_agents(50, DroneAgent, images=["images/drone.png"])
+        .batch_spawn_agents(500, DroneAgent, images=["images/drone.png"])
         .run()
     )
