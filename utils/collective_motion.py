@@ -5,43 +5,52 @@ from vi import ProximityIter, Agent
 from shapely.geometry import Polygon, Point
 
 # Final Virtual force coefficients
-PROX_WEIGHT: float = 1.0
-ALIGN_WEIGHT: float = 2.0
-AVOID_WEIGHT: float = 1.0
+PROX_WEIGHT: float = 1.0     # Alpha
+ALIGN_WEIGHT: float = 2.0    # Beta
+AVOID_WEIGHT: float = 1.0    # Gamma
 
 # Strength coefficients
-E: float = 12.0
+PROX_STR_GAIN: float = 12.0  # e
 
 # Perception Ranges
-DP: float = 2.0
-DR: float = 10.0
+SENSE_RANGE: float = 2.0     # Dp
+B_SENSE_RANGE: float = 20.0  # Dr
 
 # Desired distance variables
-DESIRED_DIST_COEFF: float = 2.0
-DESIRED_DIST: float = (2**(1/2)) * DESIRED_DIST_COEFF
+DES_DIST_COEFF: float = 2.0  # Sigma
 
 # Boundary avoidance
-AVOID_GAIN: float = 2.0    # Krep
-L_THRESH: float = 10.0     # L0
+AVOID_GAIN: float = 20.0    # Krep
+L_THRESH: float = 1.0       # L0
 
 # Biases
 LINEAR_BIAS: float = 0.05   # Uc
 
+# Speed Gains
+LIN_GAIN: float = 0.5      # K1
+ANG_GAIN: float = 0.4       # K2
 
-def compute_target_velocities(focal_drone: Agent, linear_velocity: Vector2, angular_velocity: float)\
-        -> (Vector2, float):
+
+def compute_target_velocities(focal_agent: Agent) -> (Vector2, float):
     """
     Computes the target linear and angular of the drone given its current values.
 
-    Placeholder!
-
     """
-    focal_pos = focal_drone.pos
 
-    target_vel = Vector2(1, 0)
-    target_ang_vel = -10.0
+    prox_control_vec = proximal_control_force(focal_agent)
+    align_control_vec = alignment_control_force(focal_agent)
+    bound_avoidance_vec = boundary_avoidance_force(focal_agent)
 
-    return target_vel, target_ang_vel
+    virtual_force_vec = (PROX_WEIGHT * prox_control_vec) + (ALIGN_WEIGHT * align_control_vec)\
+                        + (AVOID_WEIGHT * bound_avoidance_vec)
+
+    target_linear_vel = LIN_GAIN * virtual_force_vec[0] + LINEAR_BIAS
+    target_angular_vel = ANG_GAIN * virtual_force_vec[1]
+
+    print(target_linear_vel, target_angular_vel)
+    target_vel = Vector2(target_linear_vel, 0)
+
+    return target_vel, target_angular_vel
 
 
 # ------------------------------------- Proximal Control Section -------------------------------------
@@ -75,7 +84,7 @@ def single_proximal_vector_magnitude(dist: float) -> float:
 
     """
 
-    return -E * ((2 * (DESIRED_DIST_COEFF**4/dist**5)) - (DESIRED_DIST_COEFF**2/dist**3))
+    return -PROX_STR_GAIN * ((2 * (DES_DIST_COEFF**4/dist**5)) - (DES_DIST_COEFF**2/dist**3))
 
 
 def single_proximal_vector_angle(focal_agent: Agent, neighbor_agent: Agent) -> float:
@@ -185,7 +194,7 @@ def detect_boundaries(focal_agent: Agent) -> list[Polygon]:
     for boundary in focal_agent.simulation.boundaries:
         dist = distance_to_boundary(focal_agent, boundary)
 
-        if dist <= DR:
+        if dist <= B_SENSE_RANGE:
             detected.append(boundary)
 
     return detected

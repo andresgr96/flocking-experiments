@@ -24,7 +24,7 @@ class DroneAgent(Agent):
 
         # Compute target velocities
         target_vel, self.angular_velocity = \
-            compute_target_velocities(self, self.linear_velocity, self.angular_velocity)
+            compute_target_velocities(self)
 
         self.linear_velocity = target_vel
         # Rotate heading based on angular velocity
@@ -35,9 +35,7 @@ class DroneAgent(Agent):
         self.linear_velocity = self.linear_velocity.rotate(self.heading)
         # print(self.linear_velocity)
 
-        # print(self.__simulation._boundaries)
-        # print(collective_motion.detect_boundaries(self))
-        print(collective_motion.boundary_avoidance_force(self))
+        print(self.linear_velocity)
 
     def there_is_no_escape(self) -> bool:
         """
