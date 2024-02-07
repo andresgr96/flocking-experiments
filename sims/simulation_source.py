@@ -1,11 +1,7 @@
 from __future__ import annotations
-import numpy as np
 from vi import Agent, Config, Simulation
-import random
-from dataclasses import dataclass
 from typing import TYPE_CHECKING, Optional, Type, TypeVar
 import cv2
-
 from shapely.geometry import Polygon
 import pygame as pg
 from pygame.gfxdraw import hline, vline

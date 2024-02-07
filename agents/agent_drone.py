@@ -11,7 +11,7 @@ class DroneAgent(Agent):
                  b_sense_range=20.0):
         super().__init__(images, simulation)
 
-        self.__simulation = simulation
+        self.simulation = simulation
         self.b_sense_range = b_sense_range
         # Add parameters specific to drone movement
         self.linear_velocity = linear_velocity
@@ -39,6 +39,8 @@ class DroneAgent(Agent):
         # print(self.linear_velocity)
 
         # print(self.__simulation._boundaries)
+        print(collective_motion.detect_boundaries(self))
+        # print(collective_motion.distance_to_boundary(self, self.__simulation._boundaries[1]))
 
     def there_is_no_escape(self) -> bool:
         """
@@ -63,7 +65,7 @@ class DroneAgent(Agent):
 
     def change_position(self):
         """
-            Override
+            Override original function, now it stops the agents movement if drone reached a boundary
         """
         if not self._moving:
             return

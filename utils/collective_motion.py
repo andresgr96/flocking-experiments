@@ -2,7 +2,7 @@ import pygame as pg
 import random
 from pygame.math import Vector2
 from vi import ProximityIter, Agent
-# from agents.agent_drone import DroneAgent
+from shapely.geometry import Polygon, Point
 
 # Final Virtual force coefficients
 PROX_WEIGHT: float = 1.0
@@ -14,7 +14,7 @@ E: float = 12.0
 
 # Perception Ranges
 DP: float = 2.0
-DR: float = 0.5
+DR: float = 10.0
 
 # Desired distance variables
 DESIRED_DIST_COEFF: float = 2.0
@@ -121,4 +121,32 @@ def sum_neighbor_headings(focal_agent: Agent) -> Vector2:
 # -------------------------------- Boundary Avoidance Section --------------------------------
 def boundary_avoidance_force() -> Vector2:
     pass
+
+
+def detect_boundaries(focal_agent: Agent) -> list[Polygon]:
+
+    detected = []
+
+    for boundary in focal_agent.simulation._boundaries:
+        dist = distance_to_boundary(focal_agent, boundary)
+
+        if dist <= DR:
+            detected.append(boundary)
+
+    return detected
+
+
+def distance_to_boundary(focal_agent: Agent, boundary: Polygon) -> float:
+    """
+    Calculates the distance between the focal agent and the given boundary
+
+    Pygame's inverted y-axis might affect the calculations, checking needed!!
+
+    """
+
+    # Transform drone coordinates into a shapely point
+    x, y = focal_agent.pos
+    drone_pos = Point(x, y)
+
+    return drone_pos.distance(boundary)
 
