@@ -89,13 +89,15 @@ def single_proximal_vector_magnitude(dist: float) -> float:
 
 def single_proximal_vector_angle(focal_agent: Agent, neighbor_agent: Agent) -> float:
     """
-    Calculates the angle from one agent position to its neighbor.
-
-    Might be that pygame uses the global reference frame, checking needed!!
+    Calculate the angle between two agents relative to the focal agents local frame of reference
 
     """
+    diff_vector = neighbor_agent.pos - focal_agent.pos
 
-    return focal_agent.pos.angle_to(neighbor_agent.pos)
+    # Rotate the vector to align with the x-axis of the focal agents local frame
+    rotated_vector = diff_vector.rotate(-focal_agent.heading)
+
+    return rotated_vector.angle_to(Vector2(1, 0))
 
 # ------------------------------------- Alignment Control Section -------------------------------------
 
@@ -213,7 +215,5 @@ def distance_to_boundary(focal_agent: Agent, boundary: Polygon) -> float:
     drone_pos = Point(x, y)
 
     return drone_pos.distance(boundary)
-
-# ------------------------------------- Motion Control Section -------------------------------------
 
 

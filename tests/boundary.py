@@ -20,7 +20,9 @@ screen = pg.display.set_mode((width, height))
 boundary_rect = (0, 0, 1, 500)
 boundary = Boundary(boundary_rect)
 
-agent_pos = Vector2(50, 300)  # Replace with your agent's position
+agent_pos = Vector2(200, 200)
+
+agent2_pos = Vector2(100, 200)
 agent_radius = 10  # Replace with your agent's radius
 
 
@@ -33,9 +35,6 @@ while running:
         if event.type == pg.QUIT:
             running = False
 
-    # Update logic here
-    agent_pos -= Vector2(1, 0)
-    # Check collisions with the boundary
 
     if boundary.check_collision(agent_pos, agent_radius):
         # Handle collision behavior (e.g., stop the agent or change its direction)
@@ -46,6 +45,11 @@ while running:
 
     # Draw the agent (replace with your agent drawing code)
     pg.draw.circle(screen, (255, 0, 0), (int(agent_pos.x), int(agent_pos.y)), agent_radius)
+
+    pg.draw.circle(screen, (255, 0, 0), (int(agent2_pos.x), int(agent2_pos.y)), agent_radius)
+
+    print(f"Pygame Angle: {agent_pos.angle_to(agent2_pos)}")
+    print(f"Atahn Angle: {agent_pos.angle_to(agent2_pos)}")
 
     pg.display.flip()
     clock.tick(60)
