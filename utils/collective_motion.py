@@ -22,7 +22,10 @@ DESIRED_DIST: float = (2**(1/2)) * DESIRED_DIST_COEFF
 
 # Boundary avoidance
 AVOID_GAIN: float = 2.0    # Krep
-L_THRESH: float = 10.0      # L0
+L_THRESH: float = 10.0     # L0
+
+# Biases
+LINEAR_BIAS: float = 0.05   # Uc
 
 
 def compute_target_velocities(focal_drone: Agent, linear_velocity: Vector2, angular_velocity: float)\
@@ -140,7 +143,7 @@ def boundary_avoidance_force(focal_agent: Agent) -> Vector2:
     return total_avoidance_vector
 
 
-def single_boundary_magnitude(focal_agent: Agent, boundary: Polygon) -> float:
+def single_boundary_magnitude(focal_agent: Agent, boundary: Polygon) -> Vector2:
     """
     Returns the magnitude of the avoidance vector from focal agent to the given edge
 
@@ -148,9 +151,7 @@ def single_boundary_magnitude(focal_agent: Agent, boundary: Polygon) -> float:
     shortest_dist = distance_to_boundary(focal_agent, boundary)
     dir_to_edge = unit_vector_to_closest_point(focal_agent, boundary)
 
-    mag = AVOID_GAIN * ((1/shortest_dist) - (1/L_THRESH)) * (dir_to_edge/shortest_dist**3)
-
-    return mag
+    return AVOID_GAIN * ((1/shortest_dist) - (1/L_THRESH)) * (dir_to_edge/shortest_dist**3)
 
 
 def unit_vector_to_closest_point(focal_agent: Agent, boundary: Polygon) -> Vector2:
