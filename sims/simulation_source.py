@@ -41,7 +41,7 @@ class SourceSim(Simulation):
         pg.display.flip()
 
         # Add the boundaries to the environment
-        self._boundaries = self.add_boundaries()
+        self.boundaries = self.add_boundaries()
 
         # Initialise the clock. Used to cap FPS.
         self._clock = pg.time.Clock()

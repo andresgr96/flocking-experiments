@@ -21,8 +21,8 @@ DESIRED_DIST_COEFF: float = 2.0
 DESIRED_DIST: float = (2**(1/2)) * DESIRED_DIST_COEFF
 
 # Boundary avoidance
-AVOID_GAIN: float = 2.0
-L_THRESH: float = 0.5
+AVOID_GAIN: float = 2.0    # Krep
+L_THRESH: float = 10.0      # L0
 
 
 def compute_target_velocities(focal_drone: Agent, linear_velocity: Vector2, angular_velocity: float)\
@@ -41,7 +41,7 @@ def compute_target_velocities(focal_drone: Agent, linear_velocity: Vector2, angu
     return target_vel, target_ang_vel
 
 
-# -------------------------------- Proximal Control Section --------------------------------
+# ------------------------------------- Proximal Control Section -------------------------------------
 def proximal_control_force(focal_agent: Agent) -> Vector2:
     """
     Calculates the final proximal control vector weighted by a set coefficient
@@ -85,7 +85,7 @@ def single_proximal_vector_angle(focal_agent: Agent, neighbor_agent: Agent) -> f
 
     return focal_agent.pos.angle_to(neighbor_agent.pos)
 
-# -------------------------------- Alignment Control Section --------------------------------
+# ------------------------------------- Alignment Control Section -------------------------------------
 
 
 def alignment_control_force(focal_agent: Agent) -> Vector2:
@@ -118,16 +118,70 @@ def sum_neighbor_headings(focal_agent: Agent) -> Vector2:
     return total_heading
 
 
-# -------------------------------- Boundary Avoidance Section --------------------------------
-def boundary_avoidance_force() -> Vector2:
-    pass
+# ------------------------------------- Boundary Avoidance Section -------------------------------------
+def boundary_avoidance_force(focal_agent: Agent) -> Vector2:
+    """
+    Calculates the total boundary avoidance force for the focal agent
+
+    Pygame's inverted y-coordinate might be poisoning the results, checking needed!
+
+    """
+    total_avoidance_vector = Vector2(0, 0)
+    detected = detect_boundaries(focal_agent)
+
+    # If no edges are detected, no force is applied
+    if len(detected) == 0:
+        return total_avoidance_vector
+    else:
+        for boundary in detected:
+            avoidance_vector = single_boundary_magnitude(focal_agent, boundary)
+            total_avoidance_vector += avoidance_vector
+
+    return total_avoidance_vector
+
+
+def single_boundary_magnitude(focal_agent: Agent, boundary: Polygon) -> float:
+    """
+    Returns the magnitude of the avoidance vector from focal agent to the given edge
+
+    """
+    shortest_dist = distance_to_boundary(focal_agent, boundary)
+    dir_to_edge = unit_vector_to_closest_point(focal_agent, boundary)
+
+    mag = AVOID_GAIN * ((1/shortest_dist) - (1/L_THRESH)) * (dir_to_edge/shortest_dist**3)
+
+    return mag
+
+
+def unit_vector_to_closest_point(focal_agent: Agent, boundary: Polygon) -> Vector2:
+    """
+    Calculates the unit vector pointing from the focal agent to the closest point on the given boundary
+
+    Pygame's inverted y-axis might affect the calculations, checking needed!!
+
+    """
+    # Transform drone coordinates into a shapely point
+    x, y = focal_agent.pos
+    drone_pos = Point(x, y)
+
+    # Find the closest point on the boundary to the agent and get the difference vector
+    closest_point = boundary.exterior.interpolate(boundary.exterior.project(drone_pos))
+    vec_to_closest_point = Vector2(closest_point.x - x, closest_point.y - y)
+
+    # Normalize the vector to obtain the unit vector
+    unit_vector = vec_to_closest_point.normalize()
+
+    return unit_vector
 
 
 def detect_boundaries(focal_agent: Agent) -> list[Polygon]:
+    """
+    Returns the boundaries within the boundary sensing range of the drone
 
+    """
     detected = []
 
-    for boundary in focal_agent.simulation._boundaries:
+    for boundary in focal_agent.simulation.boundaries:
         dist = distance_to_boundary(focal_agent, boundary)
 
         if dist <= DR:
@@ -149,4 +203,7 @@ def distance_to_boundary(focal_agent: Agent, boundary: Polygon) -> float:
     drone_pos = Point(x, y)
 
     return drone_pos.distance(boundary)
+
+# ------------------------------------- Motion Control Section -------------------------------------
+
 

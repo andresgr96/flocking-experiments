@@ -7,17 +7,14 @@ from utils.collective_motion import compute_target_velocities
 
 
 class DroneAgent(Agent):
-    def __init__(self, simulation, images, linear_velocity=Vector2(1, 0), angular_velocity=0.0, heading=0.0,
-                 b_sense_range=20.0):
+    def __init__(self, simulation, images, linear_velocity=Vector2(1, 0), angular_velocity=0.0, heading=0.0):
         super().__init__(images, simulation)
 
         self.simulation = simulation
-        self.b_sense_range = b_sense_range
+
         # Add parameters specific to drone movement
         self.linear_velocity = linear_velocity
         self.angular_velocity = angular_velocity
-        self.target_linear_velocity = linear_velocity
-        self.target_angular_velocity = angular_velocity
         self.heading = heading if heading is not None else random.uniform(0, 360)
 
     def update(self):
@@ -39,8 +36,8 @@ class DroneAgent(Agent):
         # print(self.linear_velocity)
 
         # print(self.__simulation._boundaries)
-        print(collective_motion.detect_boundaries(self))
-        # print(collective_motion.distance_to_boundary(self, self.__simulation._boundaries[1]))
+        # print(collective_motion.detect_boundaries(self))
+        print(collective_motion.boundary_avoidance_force(self))
 
     def there_is_no_escape(self) -> bool:
         """
