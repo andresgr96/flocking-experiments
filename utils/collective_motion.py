@@ -11,7 +11,6 @@ AVOID_WEIGHT: float = 1.0
 
 # Strength coefficients
 E: float = 12.0
-K_REP: float = 2.0
 
 # Perception Ranges
 DP: float = 2.0
@@ -21,17 +20,23 @@ DR: float = 0.5
 DESIRED_DIST_COEFF: float = 2.0
 DESIRED_DIST: float = (2**(1/2)) * DESIRED_DIST_COEFF
 
+# Boundary avoidance
+AVOID_GAIN: float = 2.0
+L_THRESH: float = 0.5
+
 
 def compute_target_velocities(focal_drone: Agent, linear_velocity: Vector2, angular_velocity: float)\
         -> (Vector2, float):
     """
     Computes the target linear and angular of the drone given its current values.
 
+    Placeholder!
+
     """
     focal_pos = focal_drone.pos
 
     target_vel = Vector2(1, 0)
-    target_ang_vel = 30.0
+    target_ang_vel = -10.0
 
     return target_vel, target_ang_vel
 
@@ -43,7 +48,7 @@ def proximal_control_force(focal_agent: Agent) -> Vector2:
 
     """
     force_vector = Vector2(0, 0)
-    
+
     for neighbor, distance in focal_agent.in_proximity_accuracy():
 
         # Get the vector pointing from focal to neighbor, its magnitude and angle
@@ -108,8 +113,6 @@ def sum_neighbor_headings(focal_agent: Agent) -> Vector2:
     for neighbor, _ in focal_agent.in_proximity_accuracy():
 
         neighbor_vector_heading = Vector2(1, 0).rotate(neighbor.heading)
-        total_heading += neighbor_vector_heading
-
         total_heading += neighbor_vector_heading
 
     return total_heading
