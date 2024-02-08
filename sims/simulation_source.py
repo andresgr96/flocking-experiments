@@ -4,6 +4,7 @@ from typing import TYPE_CHECKING, Optional, Type, TypeVar
 import cv2
 from shapely.geometry import Polygon
 import pygame as pg
+from utils.sensor import Sensor
 from pygame.gfxdraw import hline, vline
 from pygame.math import Vector2
 
@@ -13,7 +14,6 @@ class SourceSim(Simulation):
     """
         This class inherits from Simulation, but has the extra parameter to have an image as custom background.
 
-        Eventually it'll build a coordinate system from the image array values to use as environment.
     """
     _background: pg.surface.Surface
     _clock: pg.time.Clock
@@ -45,6 +45,8 @@ class SourceSim(Simulation):
 
         # Initialise the clock. Used to cap FPS.
         self._clock = pg.time.Clock()
+
+        self._proximity = Sensor(self._agents, self.config.radius)
 
     def add_boundaries(self) -> list[Polygon]:
         """

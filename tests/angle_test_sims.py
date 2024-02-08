@@ -1,5 +1,5 @@
 from sims.simulation_source import SourceSim
-from agents.test_agent import TestDroneAgent
+from agents.test_agent import TestNHDDAgent
 from vi import Config
 import cv2
 
@@ -17,7 +17,7 @@ simulation file to also take the position, and remember to change it back after 
 if __name__ == "__main__":
     simulation = (
         SourceSim(image, Config(image_rotation=True))
-        .spawn_agent(TestDroneAgent, (200, 100), images=["images/drone.png"])
-        .spawn_agent(TestDroneAgent, (200, 90), images=["images/drone.png"])
+        .spawn_agent(TestNHDDAgent, (200, 100), images=["images/drone.png"])
+        .spawn_agent(TestNHDDAgent, (200, 90), images=["images/drone.png"])
         .run()
     )

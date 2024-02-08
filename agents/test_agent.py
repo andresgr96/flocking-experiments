@@ -1,10 +1,10 @@
-from agents.agent_drone import DroneAgent
+from agents.agent_NHDD import NHDDAgent
 import pygame as pg
 from pygame.math import Vector2
 from utils import collective_motion
 
 
-class TestDroneAgent(DroneAgent):
+class TestNHDDAgent(NHDDAgent):
 
     """
     This agent requires a position and can be used to confirm calculations like relative angles.

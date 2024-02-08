@@ -1,6 +1,6 @@
 from sims.simulation_source import SourceSim
 from agents.agent_flock import SourceAgent
-from agents.agent_drone import DroneAgent
+from agents.agent_NHDD import NHDDAgent
 from vi import Config
 import cv2
 
@@ -11,6 +11,6 @@ image = cv2.imread(image_path)
 if __name__ == "__main__":
     simulation = (
         SourceSim(image, Config(image_rotation=True))
-        .batch_spawn_agents(1, DroneAgent, images=["images/drone.png"])
+        .batch_spawn_agents(20, NHDDAgent, images=["images/drone.png"])
         .run()
     )

@@ -47,7 +47,7 @@ def compute_target_velocities(focal_agent: Agent) -> (Vector2, float):
     target_linear_vel = LIN_GAIN * virtual_force_vec[0] + LINEAR_BIAS
     target_angular_vel = ANG_GAIN * virtual_force_vec[1]
 
-    print(target_linear_vel, target_angular_vel)
+    # print(target_linear_vel, target_angular_vel)
     target_vel = Vector2(target_linear_vel, 0)
 
     return target_vel, target_angular_vel
@@ -61,7 +61,8 @@ def proximal_control_force(focal_agent: Agent) -> Vector2:
     """
     force_vector = Vector2(0, 0)
 
-    for neighbor, distance in focal_agent.in_proximity_accuracy():
+    for neighbor, distance, rel_angle in focal_agent.in_proximity_accuracy():
+        print(rel_angle)
 
         # Get the vector pointing from focal to neighbor, its magnitude and angle
         diff_vec = neighbor.pos - focal_agent.pos
@@ -124,7 +125,7 @@ def sum_neighbor_headings(focal_agent: Agent) -> Vector2:
     """
     total_heading = Vector2(0, 0)
 
-    for neighbor, _ in focal_agent.in_proximity_accuracy():
+    for neighbor, _ , _ in focal_agent.in_proximity_accuracy():
 
         neighbor_vector_heading = Vector2(1, 0).rotate(neighbor.heading)
         total_heading += neighbor_vector_heading
