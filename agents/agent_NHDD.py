@@ -1,81 +1,142 @@
+import math
+
 from vi import Agent
-import pygame as pg
 import random
 from pygame.math import Vector2
-from utils import collective_motion
-from utils.collective_motion import compute_target_velocities
+
+# Final Virtual force coefficients
+PROX_WEIGHT: float = 1.0     # Alpha
+ALIGN_WEIGHT: float = 2.0    # Beta
+AVOID_WEIGHT: float = 1.0    # Gamma
+
+# Strength coefficients
+PROX_STR_GAIN: float = 5.0  # e
+
+# Perception Ranges
+SENSE_RANGE: float = 2.0     # Dp
+B_SENSE_RANGE: float = 20.0  # Dr
+
+# Desired distance variables
+DES_DIST_COEFF: float = 1.0  # Sigma
+
+# Boundary avoidance
+AVOID_GAIN: float = 20.0    # Krep
+L_THRESH: float = 1.0       # L0
+
+# Biases
+LINEAR_BIAS: float = 0.05   # Uc
+
+# Speed
+LIN_GAIN: float = 0.1     # K1
+ANG_GAIN: float = 0.5      # K2
+MAX_SPEED: float = 1.0              # Umax
+MAX_ANG_SPEED: float = 90/3    # Wmax
+CTRL_SPEED: float = 0.5             #dt
+
+
+def single_proximal_vector_magnitude(dist: float) -> float:
+    """
+    Calculates the magnitude of the vector pointing to the neighbor
+
+    """
+
+    return -PROX_STR_GAIN * ((2 * (DES_DIST_COEFF ** 4 / dist ** 5)) - (DES_DIST_COEFF ** 2 / dist ** 3))
 
 
 class NHDDAgent(Agent):
-    def __init__(self, simulation, images, linear_velocity=Vector2(1, 0), angular_velocity=0.0, heading=0.0):
+    def __init__(self, simulation, images, linear_velocity=None, angular_velocity=None, heading=None):
         super().__init__(images, simulation)
 
         self.simulation = simulation
-
-        # Add parameters specific to drone movement
-        self.linear_velocity = linear_velocity
-        self.angular_velocity = angular_velocity
-        self.heading = heading if heading is not None else random.uniform(0, 360)
+        self.linear_velocity = linear_velocity if linear_velocity is not None else Vector2(random.uniform(0.5, MAX_SPEED))
+        self.angular_velocity = angular_velocity if angular_velocity is not None else random.uniform(20, 360)
+        self.heading = heading if heading is not None else random.uniform(20, 360)
 
     def update(self):
+        """
+        Updates the drone movement.
+        """
 
-        # Example of using self.linear_velocity, self.angular_velocity, and self.heading for moving
-        # print(collective_motion.proximal_control_force(self))
+        neighbors = self.in_proximity_accuracy().count() > 0
 
         # Compute target velocities
-        # target_vel, self.angular_velocity = \
-        # compute_target_velocities(self)
-        neighbors = self.simulation._proximity.in_proximity_accuracy(self)
-        for neighbor, dist, angle in neighbors:
-            print(angle)
+        target_linear_vel, target_angular_vel = self.compute_target_velocities()
+        print(target_angular_vel)
 
-        self.angular_velocity = 30
+        if neighbors:
+            # Update angular velocity based on the target angular velocity
+            self.angular_velocity = target_angular_vel
 
-        # self.linear_velocity = target_vel
-        # # Rotate heading based on angular velocity
-        self.heading = self.angular_velocity
-        # # print(collective_motion.alignment_control_force(self))
-        #
-        # # Move in the direction of heading with at linear velocity
-        if not self.angular_velocity == 30:
-            self.linear_velocity = self.linear_velocity.rotate(self.heading)
-        # # print(self.linear_velocity)
-        #
-        # print(self.linear_velocity)
+            # Update heading based on the new angular velocity
+            self.heading += self.angular_velocity * self.simulation._clock.get_time() * CTRL_SPEED
 
-    # def there_is_no_escape(self) -> bool:
-    #     """
-    #     Override original function to avoid warping. Now it only checks if the agent has collided with a boundary.
-    #
-    #     """
-    #     changed = False
-    #
-    #     if self.pos.x < self._area.left:
-    #         changed = True
-    #
-    #     if self.pos.x > self._area.right:
-    #         changed = True
-    #
-    #     if self.pos.y < self._area.top:
-    #         changed = True
-    #
-    #     if self.pos.y > self._area.bottom:
-    #         changed = True
-    #
-    #     return changed
-    #
-    def change_position(self):
+            # Update linear velocity based on the target linear velocity
+            self.linear_velocity = Vector2(target_linear_vel, 0)
+
+            # Rotate the linear velocity according to the heading
+            self.linear_velocity.rotate_ip(self.heading)
+            self.linear_velocity.y = -self.linear_velocity.y
+
+        # if neighbors:
+        #     self.angular_velocity = target_angular_vel
+        #     self.heading = self.angular_velocity
+        #     self.linear_velocity = Vector2(target_linear_vel[0], target_angular_vel)
+
+    def compute_target_velocities(self) -> (Vector2, float):
         """
-            Override original function, now it stops the agents movement if drone reached a boundary
+        Computes the target linear and angular of the drone
+
         """
-        if not self._moving:
-            return
 
-        # If the agent is at one of the boundaries, stop moving to emulate a crash.
-        changed = self.there_is_no_escape()
-        if changed:
-            self.linear_velocity = Vector2(0, 0)
+        # Calculate the proximal control vector and scale it by the given weight
+        prox_control_vec = self.proximal_control_force()
+        virtual_force_vec = (PROX_WEIGHT * prox_control_vec)
 
-        # Actually update the position at last.
-        self.pos += self.linear_velocity
+        # Rotate the force vector to align with the agent's heading
+        rotated_force_vec = virtual_force_vec.rotate(-self.heading)
+
+        # Adjust for gain and add bias
+        target_linear_vel = LIN_GAIN * rotated_force_vec[0] + LINEAR_BIAS
+        target_angular_vel = ANG_GAIN * rotated_force_vec[1]
+
+        # Clamp illegal values
+        target_linear_vel = 0 if target_linear_vel <= 0 else MAX_SPEED if target_linear_vel >= MAX_SPEED\
+            else target_linear_vel
+
+        target_angular_vel = 0 if target_angular_vel <= 0 else MAX_ANG_SPEED if target_angular_vel >= MAX_ANG_SPEED\
+            else target_angular_vel
+
+        # Build linear velocity vector
+        target_vel = Vector2(target_linear_vel, 0)
+
+        return target_vel, target_angular_vel
+
+    # ------------------------------------- Proximal Control Section -------------------------------------
+    def proximal_control_force(self) -> Vector2:
+        """
+        Calculates the final proximal control vector weighted by a set coefficient
+
+        """
+        force_vector = Vector2(0, 0)
+        #                                                     Fake sensor
+        for neighbor, distance, rel_angle, diff_vec in self.in_proximity_accuracy():
+
+            # Get the vector pointing from focal to neighbor, its magnitude and angle
+            magnitude = single_proximal_vector_magnitude(distance)
+
+            # Scale to magnitude and rotate
+            scaled_vec = diff_vec * magnitude
+            rotated_vec = scaled_vec.rotate(rel_angle)
+
+            # Add the result to the total force vector
+            force_vector += rotated_vec
+
+        return force_vector
+
+
+
+
+
+
+
 

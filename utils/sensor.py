@@ -1,25 +1,11 @@
 from __future__ import annotations
 import collections
-from typing import TYPE_CHECKING, Callable, Generator, Generic, Optional, Type, TypeVar, Union, overload
+from typing import TYPE_CHECKING, Callable, Generator, TypeVar
 from pygame.sprite import Group
 from vi.proximity import ProximityEngine, ProximityIter
 from pygame.math import Vector2
 
-from typing import (
-    TYPE_CHECKING,
-    Callable,
-    Generator,
-    Generic,
-    Optional,
-    Type,
-    TypeVar,
-    Union,
-    overload,
-)
-
-
 if TYPE_CHECKING:
-    from pygame.sprite import Group
     from vi import Agent
 
 __all__ = [
@@ -27,19 +13,25 @@ __all__ = [
 ]
 
 AgentClass = TypeVar("AgentClass", bound="Agent")
-T = TypeVar("T")
-U = TypeVar("U")
 
 
 def relative_angle(focal_agent, target_agent) -> float:
     """
-    Calculate the angle between two agents relative to the focal agents local frame of reference
+    Calculate the angle between two agents relative to the focal agent's local frame of reference
 
     """
     relative_vector = target_agent.pos - focal_agent.pos
     rotated_vector = relative_vector.rotate(-focal_agent.heading)
     angle = rotated_vector.angle_to(Vector2(1, 0))
     return angle
+
+
+def difference_vector(agent1: Agent, agent2: Agent) -> Vector2:
+    """
+    Calculate the difference vector between two agents
+
+    """
+    return agent2.pos - agent1.pos
 
 
 class Sensor(ProximityEngine):
@@ -53,6 +45,7 @@ class Sensor(ProximityEngine):
 
     radius: int
     """The radius representing the agent's proximity view."""
+
     def __init__(self, agents: Group, radius: int):
         super().__init__(agents, radius)
         self.__agents = agents
@@ -92,15 +85,9 @@ class Sensor(ProximityEngine):
             if nearby_agent.id != agent.id and agent.is_alive():
                 yield nearby_agent  # type: ignore
 
-    def in_proximity_performance(self, agent: AgentClass) -> ProximityIter[AgentClass]:
-        """Retrieve a set of agents that are in the same chunk as the given agent."""
-
-        agents = self.__fast_retrieval(agent)
-        return ProximityIter(agents)
-
     def __accurate_retrieval(
         self, agent: AgentClass
-    ) -> Generator[tuple[AgentClass, float, float], None, None]:
+    ) -> Generator[tuple[AgentClass, float, float, Vector2], None, None]:
         x, y = agent.center
 
         CHUNK_SIZE = self.chunk_size
@@ -125,17 +112,15 @@ class Sensor(ProximityEngine):
                         and distance <= self.radius
                     ):
                         relative_angle_value = relative_angle(agent, other)
-                        yield (other, distance, relative_angle_value)  # type: ignore
+                        diff_vector = difference_vector(agent, other)
+                        yield (other, distance, relative_angle_value, diff_vector)  # type: ignore
 
     def in_proximity_accuracy(
         self, agent: AgentClass
-    ) -> ProximityIter[tuple[AgentClass, float, float]]:
+    ) -> ProximityIter[tuple[AgentClass, float, float, Vector2]]:
         """Retrieve a set of agents that are in the same chunk as the given agent,
-        in addition to the agents in the eight neighbouring chunks.
+        in addition to the agents in the eight neighboring chunks.
         """
 
         agents = self.__accurate_retrieval(agent)
         return ProximityIter(agents)
-
-
-
