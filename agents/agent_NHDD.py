@@ -27,8 +27,8 @@ L_THRESH: float = 1.0       # L0
 
 
 # Speed
-LIN_GAIN: float = 0.03      # K1
-ANG_GAIN: float = 0.4       # K2
+LIN_GAIN: float = 0.06      # K1
+ANG_GAIN: float = 0.8       # K2
 MAX_SPEED: float = 0.2     # Umax
 LINEAR_BIAS: float = 0.1   # Uc
 MAX_ANG_SPEED: float = 180/3    # Wmax
@@ -41,7 +41,7 @@ def single_proximal_vector_magnitude(dist: float) -> float:
 
     """
 
-    return PROX_STR_GAIN * ((2 * (DES_DIST_COEFF ** 4 / dist ** 5)) - (DES_DIST_COEFF ** 2 / dist ** 3))
+    return -(4*PROX_STR_GAIN*2/dist) * ((2 * (DES_DIST_COEFF **(2*2) / dist ** 1)) - (DES_DIST_COEFF ** 2 / dist ** 2))
 
 
 class NHDDAgent(Agent):
@@ -97,7 +97,7 @@ class NHDDAgent(Agent):
         virtual_force_vec = (PROX_WEIGHT * prox_control_vec)
 
         # Rotate the force vector to align with the agent's heading
-        rotated_force_vec = virtual_force_vec  # .rotate(-self.heading)
+        rotated_force_vec = virtual_force_vec.rotate(-self.heading)
 
         # Adjust for gain and add bias
         target_linear_vel = LIN_GAIN * rotated_force_vec[0] + LINEAR_BIAS
