@@ -5,6 +5,7 @@ import cv2
 from shapely.geometry import Polygon
 import pygame as pg
 from utils.sensor import Sensor
+import numpy as np
 from pygame.gfxdraw import hline, vline
 from pygame.math import Vector2
 
@@ -27,14 +28,13 @@ class SourceSim(Simulation):
 
         image_rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
         img_width, img_height, _ = image_rgb.shape
+        self._gradient = np.sum(image_rgb, axis=2, keepdims=True)
 
         size = (img_width, img_height)
         self._screen = pg.display.set_mode(size)
 
         # Initialise background
-        # self._background = pg.surface.Surface(size).convert()
         self._background = pg.surfarray.make_surface(image)
-        # self._background.fill((255, 255, 255))
 
         # Show background immediately (before spawning agents)
         self._screen.blit(self._background, (0, 0))
@@ -46,7 +46,7 @@ class SourceSim(Simulation):
         # Initialise the clock. Used to cap FPS.
         self._clock = pg.time.Clock()
 
-        self._proximity = Sensor(self._agents, self.config.radius)
+        self._proximity = Sensor(self._agents, self.config.radius, self._gradient)
 
     def add_boundaries(self) -> list[Polygon]:
         """

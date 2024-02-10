@@ -91,7 +91,7 @@ class NHDDAgent(Agent):
         Computes the target linear and angular of the drone
 
         """
-        # Calculate the proximal control vector and scale it by the given weight
+        # Calculate control vectors and scale it by the given weights
         prox_control_vec = self.proximal_control_force()
         align_control_vec = self.alignment_control_force()
 
@@ -123,7 +123,7 @@ class NHDDAgent(Agent):
         """
         force_vector = Vector2(0, 0)
         #                                                     Fake sensor
-        for neighbor, distance, rel_angle, diff_vec in self.in_proximity_accuracy():
+        for neighbor, distance, rel_angle in self.in_proximity_accuracy():
             # Get the vector pointing from focal to neighbor, its magnitude and angle
             magnitude = single_proximal_vector_magnitude(distance)
             polar_vector = Vector2(magnitude, rel_angle)
@@ -162,6 +162,15 @@ class NHDDAgent(Agent):
             total_heading += neighbor_vector_heading
 
         return total_heading
+
+    # ------------------------------------- Utilities -------------------------------------
+
+    def get_scalar(self):
+        """
+        Returns the scalar value of the gradient at the current position of the drone
+        """
+
+        return self.simulation._proximity.sense_scalar(self)
 
 
 

@@ -4,6 +4,7 @@ from typing import TYPE_CHECKING, Callable, Generator, TypeVar
 from pygame.sprite import Group
 from vi.proximity import ProximityEngine, ProximityIter
 from pygame.math import Vector2
+import numpy as np
 
 if TYPE_CHECKING:
     from vi import Agent
@@ -46,11 +47,11 @@ class Sensor(ProximityEngine):
     radius: int
     """The radius representing the agent's proximity view."""
 
-    def __init__(self, agents: Group, radius: int):
+    def __init__(self, agents: Group, radius: int, gradient: np.ndarray):
         super().__init__(agents, radius)
         self.__agents = agents
         self.__chunks = collections.defaultdict(set)
-
+        self.__gradient = gradient
         self._set_radius(radius)
 
     def _set_radius(self, radius: int):
@@ -112,15 +113,27 @@ class Sensor(ProximityEngine):
                         and distance <= self.radius
                     ):
                         relative_angle_value = relative_angle(agent, other)
-                        diff_vector = difference_vector(agent, other)
-                        yield (other, distance, relative_angle_value, diff_vector)  # type: ignore
+                        yield (other, distance, relative_angle_value)  # type: ignore
 
     def in_proximity_accuracy(
         self, agent: AgentClass
-    ) -> ProximityIter[tuple[AgentClass, float, float, Vector2]]:
+    ) -> ProximityIter[tuple[AgentClass, float, float]]:
         """Retrieve a set of agents that are in the same chunk as the given agent,
         in addition to the agents in the eight neighboring chunks.
         """
 
         agents = self.__accurate_retrieval(agent)
         return ProximityIter(agents)
+
+    def sense_scalar(self, agent: AgentClass) -> float:
+        x, y = agent.center
+        grad_x, grad_y = int(x), int(y)
+
+        # Clamp values to be within array bounds
+        max_x, max_y, _ = self.__gradient.shape
+        grad_x = min(max_x - 1, max(0, grad_x))
+        grad_y = min(max_y - 1, max(0, grad_y))
+
+        scalar_value = self.__gradient[grad_x, grad_y]
+
+        return scalar_value
