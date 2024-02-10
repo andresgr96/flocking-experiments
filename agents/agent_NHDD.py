@@ -13,11 +13,13 @@ AVOID_WEIGHT: float = 1.0       # Gamma
 PROX_STR_GAIN: float = 12.0     # e
 
 # Perception Ranges
-SENSE_RANGE: float = 20.0        # Dp
+SENSE_RANGE: float = 20.0       # Dp
 B_SENSE_RANGE: float = 0.5      # Dr
 
 # Desired distance variables
-DES_DIST_COEFF: float = 30.0      # Sigma
+DES_DIST_COEFF: float = 10.0    # Sigma
+DIST_COEFF_MAX: float = 30.0    # Sigma max
+DIST_COEFF_MIN: float = 10.0    # Sigma min
 
 # Boundary avoidance
 AVOID_GAIN: float = 20.0        # Krep
@@ -26,6 +28,7 @@ L_THRESH: float = 1.0           # L0
 # Linear velocity
 LIN_GAIN: float = 0.06          # K1
 MAX_SPEED: float = 0.2          # Umax
+MIN_SPEED: float = 0.1          # Umin
 LINEAR_BIAS: float = 0.1        # Uc
 
 # Angular velocity
@@ -35,7 +38,15 @@ MAX_ANG_SPEED: float = 180/3    # Wmax
 # Env control speed
 CTRL_SPEED: float = 0.01        # dt
 
-# To include alignment control or not
+# Gradient
+MAX_SCALAR_VAL: float = 255.0   # Gmax
+CORR_EXP: float = 2.0           # Eu
+PORTION: float = 0.5            # Pu
+
+# Repulsion
+REP_WEIGHT_COEFF: float = 1.0         # Delta
+
+# Others
 align: bool = False
 
 
@@ -93,6 +104,8 @@ class NHDDAgent(Agent):
         """
         # Calculate control vectors and scale it by the given weights
         prox_control_vec = self.proximal_control_force()
+        print(f"Proximal Control Vec: {prox_control_vec}")
+
         align_control_vec = self.alignment_control_force()
 
         virtual_force_vec = ((PROX_WEIGHT * prox_control_vec) + (ALIGN_WEIGHT * align_control_vec)) if align\
@@ -116,6 +129,8 @@ class NHDDAgent(Agent):
 
         return target_vel, target_angular_vel
 
+    # ------------------------------------- Proximal Control Section -------------------------------------
+
     def proximal_control_force(self) -> Vector2:
         """
         Calculates the final proximal control vector weighted by a set coefficient
@@ -130,6 +145,18 @@ class NHDDAgent(Agent):
             force_vector += polar_vector
 
         return force_vector
+
+    def single_proximal_vector_magnitude_mod(self, dist: float) -> float:
+        """
+        Calculates the magnitude of the vector pointing to the neighbor for desired distance modulation
+
+        """
+        scalar_val = self.get_scalar()
+
+        dist_coeff = DIST_COEFF_MIN + ((scalar_val / MAX_SCALAR_VAL) * (DIST_COEFF_MAX - DIST_COEFF_MIN))
+
+        return -(4 * dist_coeff * 2 / dist) * (
+                    (2 * (dist_coeff ** (2 * 2) / dist ** 1)) - (dist_coeff ** 2 / dist ** 2))
 
     # ------------------------------------- Alignment Control Section -------------------------------------
 
@@ -163,7 +190,34 @@ class NHDDAgent(Agent):
 
         return total_heading
 
-    # ------------------------------------- Utilities -------------------------------------
+    # ------------------------------------- Speed Modulation Section -------------------------------------
+
+    def repulsion_effect_force(self, pi: Vector2) -> Vector2:
+        """
+        Calculates the final repulsion effect according to the sensed scalar value vector for speed modulation
+
+        Needs updating for the actual value of pr instead of directly using pi
+
+        """
+        scalar_val = self.get_scalar()
+
+        scaled_vec = pi * REP_WEIGHT_COEFF
+        rep_weight = scalar_val / MAX_SCALAR_VAL
+
+        return scaled_vec * rep_weight
+
+    def modulate_linear_vel(self, lin_vel: float) -> float:
+        """
+        Modulates the linear velocity of the agent according to the sensed scalar value for speed modulation
+
+        """
+        scalar_val = self.get_scalar()
+        u_portion = lin_vel * (1 - (PORTION * (scalar_val / MAX_SCALAR_VAL) ** CORR_EXP))
+        u_sign = math.copysign(1, lin_vel)
+
+        return max(u_portion, (lin_vel * u_sign))
+
+    # ------------------------------------- Utilities Section -------------------------------------
 
     def get_scalar(self):
         """
