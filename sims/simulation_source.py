@@ -6,7 +6,7 @@ from shapely.geometry import Polygon
 import pygame as pg
 from utils.sensor import Sensor
 import numpy as np
-from pygame.gfxdraw import hline, vline
+import math
 from pygame.math import Vector2
 
 
@@ -47,6 +47,34 @@ class SourceSim(Simulation):
         self._clock = pg.time.Clock()
 
         self._proximity = Sensor(self._agents, self.config.radius, self._gradient)
+
+    def batch_spawn_agents(
+        self,
+        count: int,
+        agent_class: Agent,
+        images: list[str],
+        sep_distance: float,
+    ) -> "SourceSim":
+
+        # Load images once so the files don't have to be read multiple times.
+        loaded_images = self._load_images(images)
+
+        # Calculate spacing between agents based on the desired separation distance
+        spacing = sep_distance
+
+        # Calculate grid size based on the desired separation distance
+        grid_size = int(math.sqrt(count))  # assuming a square grid
+
+        # Center of the environment
+        center_x, center_y = 400, 120
+
+        for i in range(grid_size):
+            for j in range(grid_size):
+                x = center_x + (i * spacing)
+                y = center_y + (j * spacing)
+                agent_class(images=loaded_images, simulation=self, position=Vector2(x, y))
+
+        return self
 
     def add_boundaries(self) -> list[Polygon]:
         """

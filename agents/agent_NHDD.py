@@ -1,42 +1,43 @@
 import math
-
+from utils.collective_motion import random_swarm_position
 from vi import Agent
 import random
 from pygame.math import Vector2
 
 # Final Virtual force coefficients
 PROX_WEIGHT: float = 1.0        # Alpha
-ALIGN_WEIGHT: float = 2.0       # Beta
+ALIGN_WEIGHT: float = 4.0       # Beta
 AVOID_WEIGHT: float = 1.0       # Gamma
 
 # Strength coefficients
 PROX_STR_GAIN: float = 12.0     # e
 
 # Perception Ranges
-SENSE_RANGE: float = 20.0       # Dp
+SENSE_RANGE: float = 10.0       # Dp
 B_SENSE_RANGE: float = 0.5      # Dr
 
 # Desired distance variables
-DES_DIST_COEFF: float = 10.0    # Sigma
-DIST_COEFF_MAX: float = 30.0    # Sigma max
-DIST_COEFF_MIN: float = 10.0    # Sigma min
+DES_DIST: float = 9
+DES_DIST_COEFF: float = DES_DIST / 2**(1/2)   # Sigma
+DIST_COEFF_MAX: float = DES_DIST_COEFF + (DES_DIST_COEFF/2)    # Sigma max
+DIST_COEFF_MIN: float = DES_DIST_COEFF - (DES_DIST_COEFF/4)    # Sigma min
 
 # Boundary avoidance
 AVOID_GAIN: float = 20.0        # Krep
 L_THRESH: float = 1.0           # L0
 
 # Linear velocity
-LIN_GAIN: float = 0.06          # K1
-MAX_SPEED: float = 0.2          # Umax
+LIN_GAIN: float = 0.03          # K1
+MAX_SPEED: float = 0.15       # Umax
 MIN_SPEED: float = 0.1          # Umin
-LINEAR_BIAS: float = 0.1        # Uc
+LINEAR_BIAS: float = 0.05        # Uc
 
 # Angular velocity
-ANG_GAIN: float = 0.8           # K2
+ANG_GAIN: float = 0.4           # K2
 MAX_ANG_SPEED: float = 180/3    # Wmax
 
 # Env control speed
-CTRL_SPEED: float = 0.01        # dt
+CTRL_SPEED: float = 0.05        # dt
 
 # Gradient
 MAX_SCALAR_VAL: float = 255.0   # Gmax
@@ -47,7 +48,9 @@ PORTION: float = 0.5            # Pu
 REP_WEIGHT_COEFF: float = 1.0         # Delta
 
 # Others
-align: bool = False
+eliseo: bool = False         # Whether to use eliseo's or tugay's PC formula.
+align: bool = False            # Whether to use alignment control or not
+pc_only: bool = True          # Whether to do proximal control alone (without source loc)
 
 
 def single_proximal_vector_magnitude(dist: float) -> float:
@@ -56,7 +59,12 @@ def single_proximal_vector_magnitude(dist: float) -> float:
 
     """
 
-    return -(4*PROX_STR_GAIN*2/dist) * ((2 * (DES_DIST_COEFF **(2*2) / dist ** 1)) - (DES_DIST_COEFF ** 2 / dist ** 2))
+    if eliseo:
+        return -(4 * PROX_STR_GAIN * 2 / dist) * (
+                    (2 * (DES_DIST_COEFF ** 4 / dist)) - ((DES_DIST_COEFF / dist) ** 2))
+    else:
+        return -PROX_STR_GAIN * (
+                    (2 * (DES_DIST_COEFF ** 4 / dist ** 5)) - (DES_DIST_COEFF ** 2 / dist ** 3))
 
 
 class NHDDAgent(Agent):
@@ -66,13 +74,13 @@ class NHDDAgent(Agent):
     The heading is only changed by applying angular_velocity to the agent, rotating its forward movement vector.
 
     """
-    def __init__(self, simulation, images, linear_velocity=Vector2(0.1, 0), angular_velocity=0.0, heading=None):
-        super().__init__(images, simulation)
+    def __init__(self, simulation, images, position, linear_velocity=Vector2(0, 0), angular_velocity=0.0, heading=-180.0):
+        super().__init__(images, simulation, position)
 
         self.simulation = simulation
         self.linear_velocity = linear_velocity
         self.angular_velocity = angular_velocity
-        self.heading = heading if heading is not None else random.uniform(-180, 180)
+        self.heading = heading if heading is not None else random.uniform(-60, 60)
 
     def update(self):
         """
@@ -104,9 +112,13 @@ class NHDDAgent(Agent):
         """
         # Calculate control vectors and scale it by the given weights
         prox_control_vec = self.proximal_control_force()
-        print(f"Proximal Control Vec: {prox_control_vec}")
 
+        neighbors = self.in_proximity_accuracy().count()
         align_control_vec = self.alignment_control_force()
+        # if neighbors > 0:
+        #     print(f"Neighbors: {self.in_proximity_accuracy().count()}")
+        #     print(f"Proximal Control Vec: {prox_control_vec}")
+        #     print(f"Alignment Control Vec: {align_control_vec}")
 
         virtual_force_vec = ((PROX_WEIGHT * prox_control_vec) + (ALIGN_WEIGHT * align_control_vec)) if align\
             else (PROX_WEIGHT * prox_control_vec)
@@ -137,10 +149,15 @@ class NHDDAgent(Agent):
 
         """
         force_vector = Vector2(0, 0)
-        #                                                     Fake sensor
+        #                                             Fake sensor
         for neighbor, distance, rel_angle in self.in_proximity_accuracy():
+
             # Get the vector pointing from focal to neighbor, its magnitude and angle
-            magnitude = single_proximal_vector_magnitude(distance)
+            magnitude = single_proximal_vector_magnitude(distance) if pc_only\
+                else self.single_proximal_vector_magnitude_mod(distance)
+            # print(f"Magnitude: {magnitude}, Distance: {distance}")
+
+            # Build polar vector and add it to total
             polar_vector = Vector2(magnitude, rel_angle)
             force_vector += polar_vector
 
@@ -155,8 +172,12 @@ class NHDDAgent(Agent):
 
         dist_coeff = DIST_COEFF_MIN + ((scalar_val / MAX_SCALAR_VAL) * (DIST_COEFF_MAX - DIST_COEFF_MIN))
 
-        return -(4 * dist_coeff * 2 / dist) * (
-                    (2 * (dist_coeff ** (2 * 2) / dist ** 1)) - (dist_coeff ** 2 / dist ** 2))
+        if eliseo:
+            return -(4 * PROX_STR_GAIN * 2 / dist) * (
+                    (2 * (dist_coeff ** 4 / dist ** 1)) - ((dist_coeff / dist) ** 2))
+        else:
+            return -PROX_STR_GAIN * (
+                    (2 * (dist_coeff ** 4 / dist ** 5)) - (dist_coeff ** 2 / dist ** 3))
 
     # ------------------------------------- Alignment Control Section -------------------------------------
 

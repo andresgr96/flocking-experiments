@@ -10,7 +10,7 @@ image = cv2.imread(image_path)
 # Run the sim
 if __name__ == "__main__":
     simulation = (
-        SourceSim(image, Config(image_rotation=True, radius=20))
-        .batch_spawn_agents(300, NHDDAgent, images=["images/drone.png"])
+        SourceSim(image, Config(image_rotation=True, radius=10))
+        .batch_spawn_agents(100, NHDDAgent, images=["images/agent.png"], sep_distance=9.5)
         .run()
     )

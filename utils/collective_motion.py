@@ -218,3 +218,13 @@ def distance_to_boundary(focal_agent: Agent, boundary: Polygon) -> float:
     return drone_pos.distance(boundary)
 
 
+def random_swarm_position(radious) -> Vector2:
+
+    env_center = 250
+    rand_x = random.uniform(env_center - radious, env_center + radious)
+    rand_y = random.uniform(env_center - radious, env_center + radious)
+
+    return Vector2(rand_x, rand_y)
+
+
+

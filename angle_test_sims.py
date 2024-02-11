@@ -1,9 +1,11 @@
 from sims.simulation_source import SourceSim
-from agents.test_agent import TestNHDDAgent
+from sims.simulation_tests import SimTest
+from agents.test_agents import TestNHDDAgent, StationaryAgent
 from vi import Config
 import cv2
+from pygame import Vector2
 
-image_path = '../images/light_source.jpg'
+image_path = 'images/light_source.jpg'
 image = cv2.imread(image_path)
 
 """
@@ -16,8 +18,8 @@ simulation file to also take the position, and remember to change it back after 
 # Run the sim
 if __name__ == "__main__":
     simulation = (
-        SourceSim(image, Config(image_rotation=True))
-        .spawn_agent(TestNHDDAgent, (200, 100), images=["images/drone.png"])
-        .spawn_agent(TestNHDDAgent, (200, 90), images=["images/drone.png"])
+        SimTest(image, Config(image_rotation=True))
+        .spawn_agent(TestNHDDAgent, initial_position=(200, 100), heading=30.0,  images=["images/drone.png"])
+        .spawn_agent(StationaryAgent, initial_position=(200, 90), heading=0.0,  images=["images/drone.png"])
         .run()
     )
