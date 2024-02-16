@@ -8,13 +8,11 @@ from utils.sensor import Sensor
 import numpy as np
 import math
 from pygame.math import Vector2
-
+from agents.agent_NHDD import NHDDAgent
 
 class SourceSim(Simulation):
-
     """
         This class inherits from Simulation, but has the extra parameter to have an image as custom background.
-
     """
     _background: pg.surface.Surface
     _clock: pg.time.Clock
@@ -31,7 +29,8 @@ class SourceSim(Simulation):
         self._gradient = np.sum(image_rgb, axis=2, keepdims=True)
 
         size = (img_width, img_height)
-        self._screen = pg.display.set_mode(size)
+        # size = (100, 100)
+        self._screen = pg.display.set_mode(size, pg.RESIZABLE)  # Make the window resizable
 
         # Initialise background
         self._background = pg.surfarray.make_surface(image)
@@ -51,11 +50,10 @@ class SourceSim(Simulation):
     def batch_spawn_agents(
         self,
         count: int,
-        agent_class: Agent,
+        agent_class: Type[Agent],
         images: list[str],
         sep_distance: float,
     ) -> "SourceSim":
-
         # Load images once so the files don't have to be read multiple times.
         loaded_images = self._load_images(images)
 
@@ -66,7 +64,7 @@ class SourceSim(Simulation):
         grid_size = int(math.sqrt(count))  # assuming a square grid
 
         # Center of the environment
-        center_x, center_y = 400, 120
+        center_x, center_y = 250, 250
 
         for i in range(grid_size):
             for j in range(grid_size):
@@ -79,14 +77,12 @@ class SourceSim(Simulation):
     def add_boundaries(self) -> list[Polygon]:
         """
         Add boundaries to the simulation environment.
-
         """
-        #                  Left                Right              Top               Bottom
+        # Left, Right, Top, Bottom boundaries
         boundaries = [(0, 0, 0.5, 500), (500, 0, 0.5, 500), (0, 0, 500, 0.5), (0, 500, 500, 0.5)]
         boundary_polygons = []
 
         for rect_params in boundaries:
-
             # Draw Rect on the background
             rect = pg.Rect(rect_params)
             pg.draw.rect(self._background, (255, 0, 0), rect)
@@ -104,5 +100,3 @@ class SourceSim(Simulation):
         pg.display.flip()
 
         return boundary_polygons
-
-

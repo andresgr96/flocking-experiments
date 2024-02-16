@@ -3,9 +3,10 @@ from utils.collective_motion import random_swarm_position
 from vi import Agent
 import random
 from pygame.math import Vector2
+import numpy as np
 
 # Final Virtual force coefficients
-PROX_WEIGHT: float = 1.0        # Alpha
+PROX_WEIGHT: float = 2.0        # Alpha
 ALIGN_WEIGHT: float = 4.0       # Beta
 AVOID_WEIGHT: float = 1.0       # Gamma
 
@@ -13,12 +14,12 @@ AVOID_WEIGHT: float = 1.0       # Gamma
 PROX_STR_GAIN: float = 12.0     # e
 
 # Perception Ranges
-SENSE_RANGE: float = 10.0       # Dp
+SENSE_RANGE: float = 20.0       # Dp
 B_SENSE_RANGE: float = 0.5      # Dr
 
 # Desired distance variables
-DES_DIST: float = 9
-DES_DIST_COEFF: float = DES_DIST / 2**(1/2)   # Sigma
+DES_DIST: float = 1.11
+DES_DIST_COEFF: float = 0.7 # DES_DIST / 2**(1/2)   # Sigma
 DIST_COEFF_MAX: float = DES_DIST_COEFF + (DES_DIST_COEFF/2)    # Sigma max
 DIST_COEFF_MIN: float = DES_DIST_COEFF - (DES_DIST_COEFF/4)    # Sigma min
 
@@ -27,25 +28,25 @@ AVOID_GAIN: float = 20.0        # Krep
 L_THRESH: float = 1.0           # L0
 
 # Linear velocity
-LIN_GAIN: float = 0.03          # K1
-MAX_SPEED: float = 0.15       # Umax
+LIN_GAIN: float = 0.06          # K1
+MAX_SPEED: float = 0.1       # Umax
 MIN_SPEED: float = 0.1          # Umin
 LINEAR_BIAS: float = 0.05        # Uc
 
 # Angular velocity
-ANG_GAIN: float = 0.4           # K2
-MAX_ANG_SPEED: float = 180/3    # Wmax
-
-# Env control speed
-CTRL_SPEED: float = 0.05        # dt
+ANG_GAIN: float = 0.5           # K2
+MAX_ANG_SPEED: float = 180/2    # Wmax
 
 # Gradient
 MAX_SCALAR_VAL: float = 255.0   # Gmax
-CORR_EXP: float = 2.0           # Eu
+CORR_EXP: float = 12.0           # Eu
 PORTION: float = 0.5            # Pu
 
 # Repulsion
 REP_WEIGHT_COEFF: float = 1.0         # Delta
+
+# Env control speed
+DT: float = 0.05        # dt
 
 # Others
 eliseo: bool = False         # Whether to use eliseo's or tugay's PC formula.
@@ -55,16 +56,27 @@ pc_only: bool = True          # Whether to do proximal control alone (without so
 
 def single_proximal_vector_magnitude(dist: float) -> float:
     """
-    Calculates the magnitude of the vector pointing to the neighbor (Eliseo's 2012 paper formula)
+    Calculates the magnitude of the vector pointing to the neighbor
 
     """
-
     if eliseo:
         return -(4 * PROX_STR_GAIN * 2 / dist) * (
                     (2 * (DES_DIST_COEFF ** 4 / dist)) - ((DES_DIST_COEFF / dist) ** 2))
     else:
         return -PROX_STR_GAIN * (
                     (2 * (DES_DIST_COEFF ** 4 / dist ** 5)) - (DES_DIST_COEFF ** 2 / dist ** 3))
+
+
+def wrap_to_pi(angle: float) -> float:
+    """
+    Wraps the given angle to [-360, 360]
+
+    """
+    angle_rad = np.deg2rad(angle)
+    angle_rad_wrapped = np.arctan2(np.sin(angle_rad), np.cos(angle_rad))
+    angle_deg_wrapped = np.rad2deg(angle_rad_wrapped)
+
+    return angle_deg_wrapped
 
 
 class NHDDAgent(Agent):
@@ -74,7 +86,7 @@ class NHDDAgent(Agent):
     The heading is only changed by applying angular_velocity to the agent, rotating its forward movement vector.
 
     """
-    def __init__(self, simulation, images, position, linear_velocity=Vector2(0, 0), angular_velocity=0.0, heading=-180.0):
+    def __init__(self, simulation, images, position, linear_velocity=Vector2(0.15, 0), angular_velocity=0.0, heading=-180):
         super().__init__(images, simulation, position)
 
         self.simulation = simulation
@@ -86,82 +98,75 @@ class NHDDAgent(Agent):
         """
         Updates the drone movement.
         """
+        print(f"Neighbors: {self.in_proximity_accuracy().count()}")
+
         # Compute target velocities
         target_linear_vel, target_angular_vel = self.compute_target_velocities()
 
-        # Update angular velocity based on the target angular velocity
+        # Adjust translation to match the direction of the agents heading
+        final_x = target_linear_vel * math.cos(self.heading)
+        final_y = target_linear_vel * math.sin(self.heading)
+
+        # Build and update variables
+        self.linear_velocity = Vector2(final_x, final_y)
         self.angular_velocity = target_angular_vel
 
-        # Update heading based on the new angular velocity
-        self.heading += self.angular_velocity * CTRL_SPEED
-
-        # Update linear velocity based on the target linear velocity
-        self.linear_velocity = target_linear_vel
-
-        # Rotate the linear velocity vector according to the heading
-        self.linear_velocity.rotate_ip(self.heading)
-        self.linear_velocity.y = -self.linear_velocity.y
-
         # Update position for simulator to redraw
-        self.pos += self.linear_velocity * CTRL_SPEED
+        self.pos += self.linear_velocity * DT
 
-    def compute_target_velocities(self) -> (Vector2, float):
+        # Update heading based on the new angular velocity
+        self.heading += self.angular_velocity * DT
+
+    def compute_target_velocities(self) -> (float, float):
         """
         Computes the target linear and angular of the drone
 
         """
+        # neighbors = self.in_proximity_accuracy().count()
+        # align_control_vec = self.alignment_control_force()
+
         # Calculate control vectors and scale it by the given weights
-        prox_control_vec = self.proximal_control_force()
+        forces, ij_angles = self.proximal_control_force()
 
-        neighbors = self.in_proximity_accuracy().count()
-        align_control_vec = self.alignment_control_force()
-        # if neighbors > 0:
-        #     print(f"Neighbors: {self.in_proximity_accuracy().count()}")
-        #     print(f"Proximal Control Vec: {prox_control_vec}")
-        #     print(f"Alignment Control Vec: {align_control_vec}")
-
-        virtual_force_vec = ((PROX_WEIGHT * prox_control_vec) + (ALIGN_WEIGHT * align_control_vec)) if align\
-            else (PROX_WEIGHT * prox_control_vec)
-
-        # Project force onto the agents local frame of reference
-        rotated_force_vec = virtual_force_vec.rotate(-self.heading)
+        # Calculate components of Fi in the local reference frame
+        fi_x = PROX_WEIGHT * (forces * math.cos(ij_angles))
+        fi_y = PROX_WEIGHT * (forces * math.sin(ij_angles))
 
         # Adjust for gain and add bias
-        target_linear_vel = LIN_GAIN * rotated_force_vec[0] + LINEAR_BIAS
-        target_angular_vel = ANG_GAIN * rotated_force_vec[1]
+        target_linear_vel = LIN_GAIN * fi_x + LINEAR_BIAS
+        target_angular_vel = ANG_GAIN * fi_y
 
-        # Clamp illegal linear and angular velocity values to avoid snappy movements
+        print(target_linear_vel, target_angular_vel)
+
+        # Clamp illegal linear and angular velocity values
         target_linear_vel = 0 if target_linear_vel <= 0 else MAX_SPEED if target_linear_vel >= MAX_SPEED\
             else target_linear_vel
         target_angular_vel = -MAX_ANG_SPEED if target_angular_vel <= -MAX_ANG_SPEED else MAX_ANG_SPEED if\
             target_angular_vel >= MAX_ANG_SPEED else target_angular_vel
 
-        # Build linear velocity vector
-        target_vel = Vector2(target_linear_vel, 0)
-
-        return target_vel, target_angular_vel
+        return target_linear_vel, target_angular_vel
 
     # ------------------------------------- Proximal Control Section -------------------------------------
 
-    def proximal_control_force(self) -> Vector2:
+    def proximal_control_force(self) -> (float, float):
         """
-        Calculates the final proximal control vector weighted by a set coefficient
+        Calculates the final proximal control magnitude and angle values
 
         """
-        force_vector = Vector2(0, 0)
-        #                                             Fake sensor
-        for neighbor, distance, rel_angle in self.in_proximity_accuracy():
+        final_magnitude: float = 0
+        final_angle: float = 0
+        for neighbor, distance, angle in self.in_proximity_accuracy():
+            final_angle += angle
 
             # Get the vector pointing from focal to neighbor, its magnitude and angle
             magnitude = single_proximal_vector_magnitude(distance) if pc_only\
                 else self.single_proximal_vector_magnitude_mod(distance)
-            # print(f"Magnitude: {magnitude}, Distance: {distance}")
 
-            # Build polar vector and add it to total
-            polar_vector = Vector2(magnitude, rel_angle)
-            force_vector += polar_vector
+            final_magnitude += magnitude
 
-        return force_vector
+        final_angle = wrap_to_pi(final_angle)
+        return final_magnitude, final_angle
+
 
     def single_proximal_vector_magnitude_mod(self, dist: float) -> float:
         """

@@ -5,6 +5,7 @@ from pygame.sprite import Group
 from vi.proximity import ProximityEngine, ProximityIter
 from pygame.math import Vector2
 import numpy as np
+import math
 
 if TYPE_CHECKING:
     from vi import Agent
@@ -24,6 +25,7 @@ def relative_angle(focal_agent, target_agent) -> float:
     relative_vector = target_agent.pos - focal_agent.pos
     rotated_vector = relative_vector.rotate(-focal_agent.heading)
     angle = rotated_vector.angle_to(Vector2(1, 0))
+    angle = -angle
     return angle
 
 

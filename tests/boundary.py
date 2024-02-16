@@ -1,4 +1,5 @@
 import pygame as pg
+import math
 from pygame.math import Vector2
 
 
@@ -13,17 +14,18 @@ class Boundary:
 pg.init()
 
 # Set up the display
-width, height = 500, 500
+width, height = 200, 200
 screen = pg.display.set_mode((width, height))
 
 # Create a boundary
-boundary_rect = (0, 0, 1, 500)
+boundary_rect = (0, 0, 1, 200)
 boundary = Boundary(boundary_rect)
 
-agent_pos = Vector2(200, 200)
+agent_pos = Vector2(100, 100)
+# agent_pos.rotate_ip(180)
 
-agent2_pos = Vector2(100, 200)
-agent_radius = 10  # Replace with your agent's radius
+agent2_pos = Vector2(150, 100)
+agent_radius = 5  # Replace with your agent's radius
 
 
 # Game loop
@@ -49,7 +51,14 @@ while running:
     pg.draw.circle(screen, (255, 0, 0), (int(agent2_pos.x), int(agent2_pos.y)), agent_radius)
 
     print(f"Pygame Angle: {agent_pos.angle_to(agent2_pos)}")
-    print(f"Atahn Angle: {agent_pos.angle_to(agent2_pos)}")
+    print(f"Atahn Angle: {math.degrees(math.atan2(-(agent2_pos.y - agent_pos.y), (agent2_pos.x - agent_pos.x)))}")
+
+    linear_velocity = Vector2(1, -1)
+    print(f"Original Velocity: {linear_velocity}")
+    linear_velocity.rotate_ip(180)
+    print(f"Rotated Velocity: {linear_velocity}")
+
+
 
     pg.display.flip()
     clock.tick(60)

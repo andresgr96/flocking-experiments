@@ -25,12 +25,11 @@ class SimTest(SourceSim):
         self,
         agent_class: Agent,
         initial_position: tuple[int, int],
-        heading:float,
         images: list[str],
     ) -> 'SimTest':
 
 
-        agent_class(images=self._load_images(images), simulation=self, initial_position=initial_position, heading=heading)
+        agent_class(images=self._load_images(images), simulation=self, initial_position=initial_position)
 
         return self
 
